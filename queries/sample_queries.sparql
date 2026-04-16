@@ -1,0 +1,163 @@
+# ==============================================================================
+# Sample SPARQL Queries for Heart Disease LOD
+# ==============================================================================
+# These queries can be executed against the local SPARQL endpoint
+# at http://localhost:5000/sparql
+# ==============================================================================
+
+# --- Query 1: List all patients (LIMIT 20) ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX hdr: <http://example.org/heart-disease-data/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?patient ?label ?age ?sex
+WHERE {
+    ?patient a hdo:Patient ;
+             rdfs:label ?label ;
+             hdo:age ?age ;
+             hdo:sex ?sex .
+}
+ORDER BY ?age
+LIMIT 20
+
+# --- Query 2: Patients with heart disease ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?patient ?age ?sex ?chestPainLabel
+WHERE {
+    ?patient a hdo:Patient ;
+             hdo:age ?age ;
+             hdo:sex ?sex ;
+             hdo:hasDiagnosis ?diagnosis ;
+             hdo:hasChestPainType ?cpType .
+    ?diagnosis hdo:hasHeartDisease "true"^^xsd:boolean .
+    ?cpType rdfs:label ?chestPainLabel .
+}
+ORDER BY DESC(?age)
+LIMIT 20
+
+# --- Query 3: Patients over 60 with high cholesterol ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?patient ?age ?sex ?cholesterol ?hasDisease
+WHERE {
+    ?patient a hdo:Patient ;
+             hdo:age ?age ;
+             hdo:sex ?sex ;
+             hdo:hasMeasurement ?measurement ;
+             hdo:hasDiagnosis ?diagnosis .
+    ?measurement hdo:cholesterol ?cholesterol .
+    ?diagnosis hdo:hasHeartDisease ?hasDisease .
+    FILTER (?age > 60 && ?cholesterol > 300)
+}
+ORDER BY DESC(?cholesterol)
+
+# --- Query 4: Average cholesterol by chest pain type ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?cpLabel (AVG(?chol) AS ?avgCholesterol) (COUNT(?patient) AS ?patientCount)
+WHERE {
+    ?patient a hdo:Patient ;
+             hdo:hasChestPainType ?cpType ;
+             hdo:hasMeasurement ?m .
+    ?m hdo:cholesterol ?chol .
+    ?cpType rdfs:label ?cpLabel .
+}
+GROUP BY ?cpLabel
+ORDER BY DESC(?avgCholesterol)
+
+# --- Query 5: Disease statistics by age group ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?ageGroup (COUNT(?patient) AS ?total)
+       (SUM(IF(?hasDisease = "true"^^xsd:boolean, 1, 0)) AS ?withDisease)
+WHERE {
+    ?patient a hdo:Patient ;
+             hdo:age ?age ;
+             hdo:hasDiagnosis ?diagnosis .
+    ?diagnosis hdo:hasHeartDisease ?hasDisease .
+    BIND(
+        IF(?age < 40, "Under 40",
+        IF(?age < 50, "40-49",
+        IF(?age < 60, "50-59",
+        IF(?age < 70, "60-69", "70+")))) AS ?ageGroup
+    )
+}
+GROUP BY ?ageGroup
+ORDER BY ?ageGroup
+
+# --- Query 6: All DBpedia links (owl:sameAs and rdfs:seeAlso) ---
+PREFIX hdo: <http://example.org/heart-disease-ontology#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?localResource ?linkType ?externalResource
+WHERE {
+    {
+        ?localResource owl:sameAs ?externalResource .
+        BIND("owl:sameAs" AS ?linkType)
+    }
+    UNION
+    {
+        ?localResource rdfs:seeAlso ?externalResource .
+        BIND("rdfs:seeAlso" AS ?linkType)
+    }
+    FILTER(STRSTARTS(STR(?externalResource), "http://dbpedia.org/"))
+}
+ORDER BY ?linkType ?localResource
+
+# ==============================================================================
+# DBpedia SPARQL Queries (run on https://dbpedia.org/sparql via Virtuoso)
+# ==============================================================================
+
+# --- DBpedia Query 1: Find heart-related diseases ---
+# Run this on https://dbpedia.org/sparql
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?disease ?label
+WHERE {
+    ?disease a dbo:Disease ;
+             rdfs:label ?label .
+    FILTER (lang(?label) = 'en')
+    FILTER (
+        CONTAINS(LCASE(?label), 'heart') ||
+        CONTAINS(LCASE(?label), 'cardiac') ||
+        CONTAINS(LCASE(?label), 'coronary') ||
+        CONTAINS(LCASE(?label), 'angina') ||
+        CONTAINS(LCASE(?label), 'myocardial')
+    )
+}
+ORDER BY ?label
+LIMIT 20
+
+# --- DBpedia Query 2: Get details for our linked resources ---
+# Run this on https://dbpedia.org/sparql
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?resource ?label ?type
+WHERE {
+    VALUES ?resource {
+        dbr:Thalassemia
+        dbr:Angina
+        dbr:Cholesterol
+        dbr:Electrocardiography
+        dbr:Blood_pressure
+        dbr:Left_ventricular_hypertrophy
+    }
+    ?resource rdfs:label ?label .
+    OPTIONAL { ?resource a ?type . FILTER(STRSTARTS(STR(?type), 'http://dbpedia.org/')) }
+    FILTER (lang(?label) = 'en')
+}
+ORDER BY ?resource
+
+# NOTE: dbr:Heart_disease is a redirect page in DBpedia (no labels/abstracts).
+# Use dbr:Cardiovascular_disease for the main resource.
+

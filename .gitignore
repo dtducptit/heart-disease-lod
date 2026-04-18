@@ -24,4 +24,4 @@ Thumbs.db
 
 # Output files (generated, can be recreated by running the pipeline)
 output/
-data/heart.csv
+data/

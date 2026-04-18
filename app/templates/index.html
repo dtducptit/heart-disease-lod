@@ -3,106 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart Disease LOD - SPARQL Query Interface</title>
-    <meta name="description" content="Interactive SPARQL endpoint for querying Heart Disease Linked Open Data with DBpedia integration">
-    
-    <!-- Google Fonts -->
+    <title>Healthcare LOD - SPARQL Query Interface</title>
+    <meta name="description" content="Interactive SPARQL endpoint for querying Healthcare Linked Open Data with DBpedia integration">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <!-- Animated Background -->
     <div class="bg-animation">
         <div class="bg-orb bg-orb-1"></div>
         <div class="bg-orb bg-orb-2"></div>
         <div class="bg-orb bg-orb-3"></div>
     </div>
 
-    <!-- Header -->
     <header id="app-header">
         <div class="header-content">
             <div class="logo-section">
                 <div class="logo-icon">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                         <circle cx="16" cy="16" r="14" stroke="url(#grad1)" stroke-width="2.5"/>
-                        <circle cx="10" cy="14" r="3" fill="#ff6b9d"/>
-                        <circle cx="22" cy="14" r="3" fill="#c084fc"/>
-                        <circle cx="16" cy="22" r="3" fill="#60a5fa"/>
-                        <line x1="10" y1="14" x2="22" y2="14" stroke="#ff6b9d" stroke-width="1.5" opacity="0.5"/>
-                        <line x1="10" y1="14" x2="16" y2="22" stroke="#60a5fa" stroke-width="1.5" opacity="0.5"/>
-                        <line x1="22" y1="14" x2="16" y2="22" stroke="#c084fc" stroke-width="1.5" opacity="0.5"/>
+                        <circle cx="10" cy="14" r="3" fill="#34d399"/>
+                        <circle cx="22" cy="14" r="3" fill="#60a5fa"/>
+                        <circle cx="16" cy="22" r="3" fill="#c084fc"/>
+                        <line x1="10" y1="14" x2="22" y2="14" stroke="#34d399" stroke-width="1.5" opacity="0.5"/>
+                        <line x1="10" y1="14" x2="16" y2="22" stroke="#c084fc" stroke-width="1.5" opacity="0.5"/>
+                        <line x1="22" y1="14" x2="16" y2="22" stroke="#60a5fa" stroke-width="1.5" opacity="0.5"/>
                         <defs>
                             <linearGradient id="grad1" x1="0" y1="0" x2="32" y2="32">
-                                <stop offset="0%" stop-color="#ff6b9d"/>
-                                <stop offset="100%" stop-color="#c084fc"/>
+                                <stop offset="0%" stop-color="#34d399"/>
+                                <stop offset="100%" stop-color="#60a5fa"/>
                             </linearGradient>
                         </defs>
                     </svg>
                 </div>
                 <div>
-                    <h1>Heart Disease LOD</h1>
-                    <p class="subtitle">5★ Linked Open Data · SPARQL Endpoint</p>
+                    <h1>Healthcare LOD</h1>
+                    <p class="subtitle">5&#9733; Linked Open Data &middot; SPARQL Endpoint</p>
                 </div>
             </div>
             <div class="header-badges">
-                <span class="badge badge-star">★★★★★</span>
+                <span class="badge badge-star">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
                 <span class="badge badge-rdf">RDF/Turtle</span>
                 <span class="badge badge-dbpedia">DBpedia Linked</span>
             </div>
         </div>
     </header>
 
-    <!-- Statistics Dashboard -->
     <section id="stats-dashboard">
         <div class="stats-grid">
             <div class="stat-card" id="stat-triples">
-                <div class="stat-icon">🔗</div>
+                <div class="stat-icon">&#128279;</div>
                 <div class="stat-value">{{ stats.get('total_triples', 0) | int }}</div>
                 <div class="stat-label">RDF Triples</div>
             </div>
             <div class="stat-card" id="stat-patients">
-                <div class="stat-icon">👤</div>
+                <div class="stat-icon">&#128100;</div>
                 <div class="stat-value">{{ stats.get('total_patients', 0) | int }}</div>
                 <div class="stat-label">Patients</div>
             </div>
-            <div class="stat-card" id="stat-positive">
-                <div class="stat-icon">❤️</div>
-                <div class="stat-value">{{ stats.get('disease_positive', 0) | int }}</div>
-                <div class="stat-label">Disease Positive</div>
+            <div class="stat-card" id="stat-admissions">
+                <div class="stat-icon">&#127973;</div>
+                <div class="stat-value">{{ stats.get('total_admissions', 0) | int }}</div>
+                <div class="stat-label">Admissions</div>
             </div>
-            <div class="stat-card" id="stat-negative">
-                <div class="stat-icon">💚</div>
-                <div class="stat-value">{{ stats.get('disease_negative', 0) | int }}</div>
-                <div class="stat-label">Disease Negative</div>
+            <div class="stat-card" id="stat-doctors">
+                <div class="stat-icon">&#129658;</div>
+                <div class="stat-value">{{ stats.get('total_doctors', 0) | int }}</div>
+                <div class="stat-label">Doctors</div>
             </div>
             <div class="stat-card" id="stat-links">
-                <div class="stat-icon">🌐</div>
+                <div class="stat-icon">&#127760;</div>
                 <div class="stat-value">{{ stats.get('external_links', 0) | int }}</div>
                 <div class="stat-label">External Links</div>
             </div>
             <div class="stat-card" id="stat-classes">
-                <div class="stat-icon">📦</div>
+                <div class="stat-icon">&#128230;</div>
                 <div class="stat-value">{{ stats.get('classes_count', 0) | int }}</div>
                 <div class="stat-label">OWL Classes</div>
             </div>
         </div>
     </section>
 
-    <!-- Main Content -->
     <main id="main-content">
-        <!-- Query Panel -->
         <section id="query-panel" class="glass-panel">
             <div class="panel-header">
-                <h2>
-                    <span class="panel-icon">⚡</span>
-                    SPARQL Query Editor
-                </h2>
+                <h2><span class="panel-icon">&#9889;</span> SPARQL Query Editor</h2>
                 <div class="query-controls">
                     <select id="sample-query-select" onchange="loadSampleQuery()">
-                        <option value="">— Select Sample Query —</option>
+                        <option value="">&mdash; Select Sample Query &mdash;</option>
                         {% for name, query in sample_queries.items() %}
                         <option value="{{ name }}">{{ name }}</option>
                         {% endfor %}
@@ -113,50 +102,41 @@
                     </select>
                 </div>
             </div>
-            
             <div class="editor-container">
                 <div class="editor-line-numbers" id="line-numbers"></div>
-                <textarea id="sparql-editor" spellcheck="false" placeholder="Enter your SPARQL query here...">PREFIX hdo: &lt;http://example.org/heart-disease-ontology#&gt;
-PREFIX hdr: &lt;http://example.org/heart-disease-data/&gt;
+                <textarea id="sparql-editor" spellcheck="false" placeholder="Enter your SPARQL query here...">PREFIX hco: &lt;http://example.org/healthcare-ontology#&gt;
+PREFIX hcd: &lt;http://example.org/healthcare-data/&gt;
 PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
 
-SELECT ?patient ?label ?age ?sex
+SELECT ?patient ?name ?age ?gender
 WHERE {
-    ?patient a hdo:Patient ;
-             rdfs:label ?label ;
-             hdo:age ?age ;
-             hdo:sex ?sex .
+    ?patient a hco:Patient ;
+             hco:patientName ?name ;
+             hco:age ?age ;
+             hco:gender ?gender .
 }
-ORDER BY ?age
+ORDER BY ?name
 LIMIT 20</textarea>
             </div>
-
             <div class="editor-actions">
                 <button id="run-query-btn" onclick="executeQuery()">
-                    <span class="btn-icon">▶</span>
-                    Execute Query
+                    <span class="btn-icon">&#9654;</span> Execute Query
                 </button>
                 <button id="clear-btn" onclick="clearEditor()" class="btn-secondary">
-                    <span class="btn-icon">✕</span>
-                    Clear
+                    <span class="btn-icon">&#10005;</span> Clear
                 </button>
                 <div class="query-status" id="query-status"></div>
             </div>
         </section>
 
-        <!-- Results Panel -->
         <section id="results-panel" class="glass-panel">
             <div class="panel-header">
-                <h2>
-                    <span class="panel-icon">📊</span>
-                    Query Results
-                </h2>
+                <h2><span class="panel-icon">&#128202;</span> Query Results</h2>
                 <div class="results-meta" id="results-meta"></div>
             </div>
-            
             <div id="results-container">
                 <div class="empty-state" id="empty-state">
-                    <div class="empty-icon">🔍</div>
+                    <div class="empty-icon">&#128269;</div>
                     <h3>No results yet</h3>
                     <p>Execute a SPARQL query above or select a sample query to get started</p>
                 </div>
@@ -170,116 +150,106 @@ LIMIT 20</textarea>
             </div>
         </section>
 
-        <!-- LOD Info Panel -->
         <section id="lod-info-panel" class="glass-panel">
             <div class="panel-header">
-                <h2>
-                    <span class="panel-icon">🌐</span>
-                    Linked Open Data Architecture
-                </h2>
+                <h2><span class="panel-icon">&#127760;</span> Linked Open Data Architecture</h2>
             </div>
             <div class="lod-content">
                 <div class="lod-stars">
                     <div class="star-level">
-                        <span class="star-badge">★</span>
-                        <div class="star-info">
-                            <strong>Available on the Web</strong>
-                            <p>Data accessible via HTTP with open license</p>
-                        </div>
-                        <span class="star-check">✓</span>
+                        <span class="star-badge">&#9733;</span>
+                        <div class="star-info"><strong>Available on the Web</strong><p>Data accessible via HTTP with open license</p></div>
+                        <span class="star-check">&#10003;</span>
                     </div>
                     <div class="star-level">
-                        <span class="star-badge">★★</span>
-                        <div class="star-info">
-                            <strong>Structured Data</strong>
-                            <p>Machine-readable structured format</p>
-                        </div>
-                        <span class="star-check">✓</span>
+                        <span class="star-badge">&#9733;&#9733;</span>
+                        <div class="star-info"><strong>Structured Data</strong><p>Machine-readable structured format</p></div>
+                        <span class="star-check">&#10003;</span>
                     </div>
                     <div class="star-level">
-                        <span class="star-badge">★★★</span>
-                        <div class="star-info">
-                            <strong>Open Format (CSV)</strong>
-                            <p>Non-proprietary format — our source data</p>
-                        </div>
-                        <span class="star-check">✓</span>
+                        <span class="star-badge">&#9733;&#9733;&#9733;</span>
+                        <div class="star-info"><strong>Open Format (CSV)</strong><p>Non-proprietary format &mdash; our source data</p></div>
+                        <span class="star-check">&#10003;</span>
                     </div>
                     <div class="star-level">
-                        <span class="star-badge">★★★★</span>
-                        <div class="star-info">
-                            <strong>RDF with URIs</strong>
-                            <p>W3C standards — RDF/Turtle with proper URIs</p>
-                        </div>
-                        <span class="star-check">✓</span>
+                        <span class="star-badge">&#9733;&#9733;&#9733;&#9733;</span>
+                        <div class="star-info"><strong>RDF with URIs</strong><p>W3C standards &mdash; RDF/Turtle with proper URIs</p></div>
+                        <span class="star-check">&#10003;</span>
                     </div>
                     <div class="star-level star-level-active">
-                        <span class="star-badge star-badge-gold">★★★★★</span>
-                        <div class="star-info">
-                            <strong>Linked Data</strong>
-                            <p>Connected to DBpedia & Wikidata via owl:sameAs</p>
-                        </div>
-                        <span class="star-check star-check-gold">✓</span>
+                        <span class="star-badge star-badge-gold">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                        <div class="star-info"><strong>Linked Data</strong><p>Connected to DBpedia &amp; Wikidata via owl:sameAs</p></div>
+                        <span class="star-check star-check-gold">&#10003;</span>
                     </div>
                 </div>
 
                 <div class="lod-links">
-                    <h3>🔗 External Links</h3>
+                    <h3>&#128279; External Links</h3>
                     <div class="link-grid">
-                        <a href="http://dbpedia.org/resource/Cardiovascular_disease" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Cardiovascular Disease</span>
+                        <a href="http://dbpedia.org/resource/Diabetes" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Diabetes</span>
                         </a>
-                        <a href="http://dbpedia.org/resource/Angina_pectoris" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Angina Pectoris</span>
+                        <a href="http://dbpedia.org/resource/Hypertension" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Hypertension</span>
                         </a>
-                        <a href="http://dbpedia.org/resource/Thalassemia" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Thalassemia</span>
+                        <a href="http://dbpedia.org/resource/Asthma" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Asthma</span>
                         </a>
-                        <a href="http://dbpedia.org/resource/Electrocardiography" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Electrocardiography</span>
+                        <a href="http://dbpedia.org/resource/Aspirin" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Aspirin</span>
                         </a>
-                        <a href="http://dbpedia.org/resource/Cholesterol" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Cholesterol</span>
+                        <a href="http://dbpedia.org/resource/Penicillin" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Penicillin</span>
                         </a>
-                        <a href="http://dbpedia.org/resource/Blood_pressure" target="_blank" class="link-card">
-                            <span class="link-source">DBpedia</span>
-                            <span class="link-name">Blood Pressure</span>
+                        <a href="http://dbpedia.org/resource/Hospital" target="_blank" class="link-card">
+                            <span class="link-source">DBpedia</span><span class="link-name">Hospital</span>
                         </a>
                         <a href="https://dbpedia.org/sparql" target="_blank" class="link-card link-card-endpoint">
-                            <span class="link-source">Virtuoso</span>
-                            <span class="link-name">DBpedia SPARQL Endpoint</span>
+                            <span class="link-source">Virtuoso</span><span class="link-name">DBpedia SPARQL Endpoint</span>
                         </a>
                         <a href="http://www.wikidata.org/entity/Q181600" target="_blank" class="link-card">
-                            <span class="link-source">Wikidata</span>
-                            <span class="link-name">Patient (Q181600)</span>
+                            <span class="link-source">Wikidata</span><span class="link-name">Patient (Q181600)</span>
                         </a>
                     </div>
                 </div>
 
                 <div class="ontology-summary">
-                    <h3>📦 Ontology Overview</h3>
+                    <h3>&#128230; Ontology Overview</h3>
                     <div class="ontology-diagram">
                         <div class="ont-node ont-class">Patient</div>
                         <div class="ont-arrows">
                             <div class="ont-arrow">
-                                <span class="ont-prop">hasDiagnosis</span>
-                                <div class="ont-node ont-class">Diagnosis</div>
+                                <span class="ont-prop">hasAdmission</span>
+                                <div class="ont-node ont-class">Admission</div>
                             </div>
                             <div class="ont-arrow">
-                                <span class="ont-prop">hasMeasurement</span>
-                                <div class="ont-node ont-class">ClinicalMeasurement</div>
+                                <span class="ont-prop">hasBloodType</span>
+                                <div class="ont-node ont-enum">BloodType</div>
                             </div>
                             <div class="ont-arrow">
-                                <span class="ont-prop">hasChestPainType</span>
-                                <div class="ont-node ont-enum">ChestPainType</div>
+                                <span class="ont-prop">hasInsurance</span>
+                                <div class="ont-node ont-class">InsuranceProvider</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ontology-diagram" style="margin-top: 1rem;">
+                        <div class="ont-node ont-class">Admission</div>
+                        <div class="ont-arrows">
+                            <div class="ont-arrow">
+                                <span class="ont-prop">attendedBy</span>
+                                <div class="ont-node ont-class">Doctor</div>
                             </div>
                             <div class="ont-arrow">
-                                <span class="ont-prop">hasThalassemia</span>
-                                <div class="ont-node ont-enum">ThalassemiaType</div>
+                                <span class="ont-prop">admittedTo</span>
+                                <div class="ont-node ont-class">Hospital</div>
+                            </div>
+                            <div class="ont-arrow">
+                                <span class="ont-prop">hasMedicalCondition</span>
+                                <div class="ont-node ont-enum">MedicalCondition</div>
+                            </div>
+                            <div class="ont-arrow">
+                                <span class="ont-prop">prescribedMedication</span>
+                                <div class="ont-node ont-enum">Medication</div>
                             </div>
                         </div>
                     </div>
@@ -288,46 +258,33 @@ LIMIT 20</textarea>
         </section>
     </main>
 
-    <!-- Footer -->
     <footer id="app-footer">
         <div class="footer-content">
-            <p>Heart Disease Linked Open Data Application · Built with RDFLib + Flask</p>
+            <p>Healthcare Linked Open Data Application &middot; Built with RDFLib + Flask</p>
             <p class="footer-links">
-                <a href="https://www.w3.org/RDF/" target="_blank">W3C RDF</a> ·
-                <a href="https://dbpedia.org/" target="_blank">DBpedia</a> ·
-                <a href="https://www.w3.org/TR/sparql11-query/" target="_blank">SPARQL 1.1</a> ·
+                <a href="https://www.w3.org/RDF/" target="_blank">W3C RDF</a> &middot;
+                <a href="https://dbpedia.org/" target="_blank">DBpedia</a> &middot;
+                <a href="https://www.w3.org/TR/sparql11-query/" target="_blank">SPARQL 1.1</a> &middot;
                 <a href="https://www.w3.org/TR/owl2-overview/" target="_blank">OWL 2</a>
             </p>
         </div>
     </footer>
 
     <script>
-        // ====================================================================
-        // Sample Queries (injected from Flask)
-        // ====================================================================
         const sampleQueries = {{ sample_queries | tojson | safe }};
 
-        // ====================================================================
-        // Editor Functions
-        // ====================================================================
         const editor = document.getElementById('sparql-editor');
         const lineNumbers = document.getElementById('line-numbers');
 
         function updateLineNumbers() {
             const lines = editor.value.split('\n').length;
             let html = '';
-            for (let i = 1; i <= lines; i++) {
-                html += `<div>${i}</div>`;
-            }
+            for (let i = 1; i <= lines; i++) { html += `<div>${i}</div>`; }
             lineNumbers.innerHTML = html;
         }
 
         editor.addEventListener('input', updateLineNumbers);
-        editor.addEventListener('scroll', () => {
-            lineNumbers.scrollTop = editor.scrollTop;
-        });
-
-        // Tab key support in editor
+        editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -337,26 +294,14 @@ LIMIT 20</textarea>
                 editor.selectionStart = editor.selectionEnd = start + 4;
                 updateLineNumbers();
             }
-            // Ctrl+Enter to execute
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                executeQuery();
-            }
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); executeQuery(); }
         });
-
-        // Initialize line numbers
         updateLineNumbers();
 
-        // ====================================================================
-        // Query Execution
-        // ====================================================================
         function loadSampleQuery() {
             const select = document.getElementById('sample-query-select');
             const queryName = select.value;
-            if (queryName && sampleQueries[queryName]) {
-                editor.value = sampleQueries[queryName];
-                updateLineNumbers();
-            }
+            if (queryName && sampleQueries[queryName]) { editor.value = sampleQueries[queryName]; updateLineNumbers(); }
         }
 
         function clearEditor() {
@@ -371,16 +316,12 @@ LIMIT 20</textarea>
 
         async function executeQuery() {
             const query = editor.value.trim();
-            if (!query) {
-                showError('Please enter a SPARQL query');
-                return;
-            }
+            if (!query) { showError('Please enter a SPARQL query'); return; }
 
             const btn = document.getElementById('run-query-btn');
             const status = document.getElementById('query-status');
-            
             btn.disabled = true;
-            btn.innerHTML = '<span class="btn-icon spinner">◌</span> Executing...';
+            btn.innerHTML = '<span class="btn-icon spinner">&#9676;</span> Executing...';
             status.innerHTML = '<span class="status-running">Running query...</span>';
 
             const endpoint = document.getElementById('endpoint-select').value;
@@ -389,19 +330,10 @@ LIMIT 20</textarea>
             try {
                 let response;
                 if (endpoint === 'dbpedia') {
-                    response = await fetch('/api/dbpedia-query', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query })
-                    });
+                    response = await fetch('/api/dbpedia-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
                 } else {
-                    response = await fetch('/sparql', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query })
-                    });
+                    response = await fetch('/sparql', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
                 }
-
                 const data = await response.json();
                 const elapsed = ((performance.now() - startTime) / 1000).toFixed(3);
 
@@ -410,57 +342,43 @@ LIMIT 20</textarea>
                     status.innerHTML = `<span class="status-error">Error (${elapsed}s)</span>`;
                 } else {
                     displayResults(data);
-                    const source = data.source ? ` · ${data.source}` : ' · Local';
-                    status.innerHTML = `<span class="status-success">✓ ${data.count} results (${elapsed}s)${source}</span>`;
+                    const source = data.source ? ` &middot; ${data.source}` : ' &middot; Local';
+                    status.innerHTML = `<span class="status-success">&#10003; ${data.count} results (${elapsed}s)${source}</span>`;
                 }
             } catch (err) {
                 showError(`Network error: ${err.message}`);
                 status.innerHTML = '<span class="status-error">Connection failed</span>';
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span class="btn-icon">▶</span> Execute Query';
+                btn.innerHTML = '<span class="btn-icon">&#9654;</span> Execute Query';
             }
         }
 
-        // ====================================================================
-        // Results Display
-        // ====================================================================
         function displayResults(data) {
             const wrapper = document.getElementById('results-table-wrapper');
             const thead = document.getElementById('results-thead');
             const tbody = document.getElementById('results-tbody');
             const meta = document.getElementById('results-meta');
-            
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('error-display').style.display = 'none';
             wrapper.style.display = 'block';
 
-            // Handle ASK queries
             if (data.type === 'ASK') {
                 thead.innerHTML = '<tr><th>Result</th></tr>';
-                tbody.innerHTML = `<tr><td class="ask-result ${data.result ? 'ask-true' : 'ask-false'}">${data.result ? 'YES (true)' : 'NO (false)'}</td></tr>`;
-                meta.innerHTML = `<span class="results-count">ASK Query</span>`;
+                tbody.innerHTML = `<tr><td class="ask-result ${data.result ? 'ask-true' : 'ask-false'}">${data.result ? 'YES' : 'NO'}</td></tr>`;
+                meta.innerHTML = '<span class="results-count">ASK Query</span>';
                 return;
             }
 
-            // SELECT queries
-            if (!data.columns || data.columns.length === 0) {
-                showError('No results returned');
-                return;
-            }
+            if (!data.columns || data.columns.length === 0) { showError('No results returned'); return; }
 
             meta.innerHTML = `<span class="results-count">${data.count} result${data.count !== 1 ? 's' : ''}</span>`;
 
-            // Build header
-            let headerHtml = '<tr>';
-            headerHtml += '<th class="row-num">#</th>';
-            data.columns.forEach(col => {
-                headerHtml += `<th>${escapeHtml(col)}</th>`;
-            });
+            let headerHtml = '<tr><th class="row-num">#</th>';
+            data.columns.forEach(col => { headerHtml += `<th>${escapeHtml(col)}</th>`; });
             headerHtml += '</tr>';
             thead.innerHTML = headerHtml;
 
-            // Build body
             let bodyHtml = '';
             data.results.forEach((row, idx) => {
                 bodyHtml += '<tr>';
@@ -468,43 +386,24 @@ LIMIT 20</textarea>
                 data.columns.forEach(col => {
                     const cell = row[col] || { value: '', type: 'literal' };
                     const value = cell.value;
-                    
                     if (cell.type === 'uri' && value.startsWith('http')) {
-                        // Make URIs clickable
                         let displayName = value;
-                        if (value.includes('#')) {
-                            displayName = value.split('#').pop();
-                        } else if (value.includes('/')) {
-                            displayName = value.split('/').pop().replace(/_/g, ' ');
-                        }
-                        
-                        const isExternal = value.startsWith('http://dbpedia.org') || 
-                                          value.startsWith('http://www.wikidata.org');
+                        if (value.includes('#')) displayName = value.split('#').pop();
+                        else if (value.includes('/')) displayName = value.split('/').pop().replace(/_/g, ' ');
+                        const isExternal = value.startsWith('http://dbpedia.org') || value.startsWith('http://www.wikidata.org');
                         const linkClass = isExternal ? 'uri-link external-link' : 'uri-link';
-                        const icon = isExternal ? '🌐 ' : '';
-                        
+                        const icon = isExternal ? '&#127760; ' : '';
                         bodyHtml += `<td><a href="${escapeHtml(value)}" target="_blank" class="${linkClass}" title="${escapeHtml(value)}">${icon}${escapeHtml(displayName)}</a></td>`;
                     } else {
-                        // Check for boolean display
-                        if (value === 'true' || value === 'True') {
-                            bodyHtml += `<td><span class="bool-badge bool-true">✓ true</span></td>`;
-                        } else if (value === 'false' || value === 'False') {
-                            bodyHtml += `<td><span class="bool-badge bool-false">✗ false</span></td>`;
-                        } else {
-                            bodyHtml += `<td>${escapeHtml(value)}</td>`;
-                        }
+                        bodyHtml += `<td>${escapeHtml(value)}</td>`;
                     }
                 });
                 bodyHtml += '</tr>';
             });
             tbody.innerHTML = bodyHtml;
 
-            // Animate rows in
             const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row, i) => {
-                row.style.animationDelay = `${i * 0.02}s`;
-                row.classList.add('row-animate');
-            });
+            rows.forEach((row, i) => { row.style.animationDelay = `${i * 0.02}s`; row.classList.add('row-animate'); });
         }
 
         function showError(message) {
@@ -512,15 +411,7 @@ LIMIT 20</textarea>
             document.getElementById('results-table-wrapper').style.display = 'none';
             const errorDiv = document.getElementById('error-display');
             errorDiv.style.display = 'block';
-            errorDiv.innerHTML = `
-                <div class="error-content">
-                    <span class="error-icon">⚠️</span>
-                    <div>
-                        <strong>Query Error</strong>
-                        <pre>${escapeHtml(message)}</pre>
-                    </div>
-                </div>
-            `;
+            errorDiv.innerHTML = `<div class="error-content"><span class="error-icon">&#9888;&#65039;</span><div><strong>Query Error</strong><pre>${escapeHtml(message)}</pre></div></div>`;
         }
 
         function escapeHtml(text) {
@@ -529,35 +420,22 @@ LIMIT 20</textarea>
             return div.innerHTML;
         }
 
-        // ====================================================================
-        // Stat Counter Animation
-        // ====================================================================
         function animateCounters() {
             document.querySelectorAll('.stat-value').forEach(el => {
                 const target = parseInt(el.textContent);
                 if (isNaN(target) || target === 0) return;
-                
                 let current = 0;
-                const duration = 1500;
-                const step = target / (duration / 16);
-                
+                const step = target / (1500 / 16);
                 el.textContent = '0';
                 const timer = setInterval(() => {
                     current += step;
-                    if (current >= target) {
-                        el.textContent = target.toLocaleString();
-                        clearInterval(timer);
-                    } else {
-                        el.textContent = Math.floor(current).toLocaleString();
-                    }
+                    if (current >= target) { el.textContent = target.toLocaleString(); clearInterval(timer); }
+                    else { el.textContent = Math.floor(current).toLocaleString(); }
                 }, 16);
             });
         }
 
-        // Run animations on load
-        window.addEventListener('load', () => {
-            animateCounters();
-        });
+        window.addEventListener('load', () => { animateCounters(); });
     </script>
 </body>
 </html>

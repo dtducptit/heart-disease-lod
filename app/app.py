@@ -1,12 +1,8 @@
 """
-Heart Disease LOD - SPARQL Endpoint & Web Interface
-=====================================================
-A Flask web application that provides:
-1. A SPARQL endpoint (/sparql) for programmatic queries
-2. A beautiful web UI (/) for interactive SPARQL querying
-3. Statistics dashboard
-4. Pre-loaded sample queries
-5. Federated query support to DBpedia
+Healthcare LOD - SPARQL Endpoint & Web Interface
+==================================================
+A Flask web application providing a SPARQL endpoint and web UI
+for querying the Healthcare Linked Open Data.
 
 Usage:
     python app.py
@@ -27,102 +23,150 @@ from SPARQLWrapper import SPARQLWrapper, JSON as SPARQL_JSON
 app = Flask(__name__)
 CORS(app)
 
-# Namespaces
-HDO = Namespace("http://example.org/heart-disease-ontology#")
-HDR = Namespace("http://example.org/heart-disease-data/")
+HCO = Namespace("http://example.org/healthcare-ontology#")
+HCD = Namespace("http://example.org/healthcare-data/")
 
-# Global RDF graph
 rdf_graph = None
 
 # ============================================================================
 # Sample SPARQL Queries
 # ============================================================================
 SAMPLE_QUERIES = {
-    "1. All Patients (LIMIT 20)": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX hdr: <http://example.org/heart-disease-data/>
+    "1. All Patients (LIMIT 20)": """PREFIX hco: <http://example.org/healthcare-ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?patient ?label ?age ?sex
+SELECT ?patient ?name ?age ?gender
 WHERE {
-    ?patient a hdo:Patient ;
-             rdfs:label ?label ;
-             hdo:age ?age ;
-             hdo:sex ?sex .
+    ?patient a hco:Patient ;
+             hco:patientName ?name ;
+             hco:age ?age ;
+             hco:gender ?gender .
 }
-ORDER BY ?age
+ORDER BY ?name
 LIMIT 20""",
 
-    "2. Patients with Heart Disease": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX hdr: <http://example.org/heart-disease-data/>
+    "2. Patients by Medical Condition": """PREFIX hco: <http://example.org/healthcare-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?name ?age ?gender ?conditionLabel
+WHERE {
+    ?patient a hco:Patient ;
+             hco:patientName ?name ;
+             hco:age ?age ;
+             hco:gender ?gender ;
+             hco:hasAdmission ?admission .
+    ?admission hco:hasMedicalCondition ?condition .
+    ?condition rdfs:label ?conditionLabel .
+}
+ORDER BY ?conditionLabel ?name
+LIMIT 30""",
+
+    "3. Emergency Admissions": """PREFIX hco: <http://example.org/healthcare-ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-SELECT ?patient ?age ?sex ?chestPainLabel
+SELECT ?name ?age ?conditionLabel ?hospital ?billing
 WHERE {
-    ?patient a hdo:Patient ;
-             hdo:age ?age ;
-             hdo:sex ?sex ;
-             hdo:hasDiagnosis ?diagnosis ;
-             hdo:hasChestPainType ?cpType .
-    ?diagnosis hdo:hasHeartDisease "true"^^xsd:boolean .
-    ?cpType rdfs:label ?chestPainLabel .
+    ?patient a hco:Patient ;
+             hco:patientName ?name ;
+             hco:age ?age ;
+             hco:hasAdmission ?admission .
+    ?admission hco:hasAdmissionType hco:Emergency ;
+               hco:hasMedicalCondition ?cond ;
+               hco:admittedTo ?hosp ;
+               hco:billingAmount ?billing .
+    ?cond rdfs:label ?conditionLabel .
+    ?hosp hco:hospitalName ?hospital .
 }
-ORDER BY DESC(?age)
+ORDER BY DESC(?billing)
 LIMIT 20""",
 
-    "3. Patients Over 60 with High Cholesterol": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX hdr: <http://example.org/heart-disease-data/>
+    "4. Average Billing by Medical Condition": """PREFIX hco: <http://example.org/healthcare-ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?patient ?age ?sex ?cholesterol ?hasDisease
+SELECT ?conditionLabel (AVG(?billing) AS ?avgBilling) (COUNT(?admission) AS ?totalAdmissions)
 WHERE {
-    ?patient a hdo:Patient ;
-             hdo:age ?age ;
-             hdo:sex ?sex ;
-             hdo:hasMeasurement ?measurement ;
-             hdo:hasDiagnosis ?diagnosis .
-    ?measurement hdo:cholesterol ?cholesterol .
-    ?diagnosis hdo:hasHeartDisease ?hasDisease .
-    FILTER (?age > 60 && ?cholesterol > 300)
+    ?admission a hco:Admission ;
+               hco:hasMedicalCondition ?cond ;
+               hco:billingAmount ?billing .
+    ?cond rdfs:label ?conditionLabel .
 }
-ORDER BY DESC(?cholesterol)""",
+GROUP BY ?conditionLabel
+ORDER BY DESC(?avgBilling)""",
 
-    "4. Average Cholesterol by Chest Pain Type": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
+    "5. Statistics by Admission Type": """PREFIX hco: <http://example.org/healthcare-ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?cpLabel (AVG(?chol) AS ?avgCholesterol) (COUNT(?patient) AS ?patientCount)
+SELECT ?admTypeLabel (COUNT(?admission) AS ?total) (AVG(?billing) AS ?avgCost)
 WHERE {
-    ?patient a hdo:Patient ;
-             hdo:hasChestPainType ?cpType ;
-             hdo:hasMeasurement ?m .
-    ?m hdo:cholesterol ?chol .
-    ?cpType rdfs:label ?cpLabel .
+    ?admission a hco:Admission ;
+               hco:hasAdmissionType ?admType ;
+               hco:billingAmount ?billing .
+    ?admType rdfs:label ?admTypeLabel .
 }
-GROUP BY ?cpLabel
-ORDER BY DESC(?avgCholesterol)""",
+GROUP BY ?admTypeLabel
+ORDER BY DESC(?total)""",
 
-    "5. Disease Statistics by Age Group": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    "6. Medication Prescription Statistics": """PREFIX hco: <http://example.org/healthcare-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?ageGroup (COUNT(?patient) AS ?total)
-       (SUM(IF(?hasDisease = "true"^^xsd:boolean, 1, 0)) AS ?withDisease)
-       (SUM(IF(?hasDisease = "false"^^xsd:boolean, 1, 0)) AS ?withoutDisease)
+SELECT ?medLabel ?condLabel (COUNT(?adm) AS ?prescriptions)
 WHERE {
-    ?patient a hdo:Patient ;
-             hdo:age ?age ;
-             hdo:hasDiagnosis ?diagnosis .
-    ?diagnosis hdo:hasHeartDisease ?hasDisease .
-    BIND(
-        IF(?age < 40, "Under 40",
-        IF(?age < 50, "40-49",
-        IF(?age < 60, "50-59",
-        IF(?age < 70, "60-69", "70+")))) AS ?ageGroup
-    )
+    ?adm a hco:Admission ;
+         hco:prescribedMedication ?med ;
+         hco:hasMedicalCondition ?cond .
+    ?med rdfs:label ?medLabel .
+    ?cond rdfs:label ?condLabel .
 }
-GROUP BY ?ageGroup
-ORDER BY ?ageGroup""",
+GROUP BY ?medLabel ?condLabel
+ORDER BY ?medLabel ?condLabel""",
 
-    "6. Linked Data - DBpedia Connections": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
+    "7. Test Results Distribution": """PREFIX hco: <http://example.org/healthcare-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?resultLabel ?condLabel (COUNT(?adm) AS ?count)
+WHERE {
+    ?adm a hco:Admission ;
+         hco:hasTestResult ?result ;
+         hco:hasMedicalCondition ?cond .
+    ?result rdfs:label ?resultLabel .
+    ?cond rdfs:label ?condLabel .
+}
+GROUP BY ?resultLabel ?condLabel
+ORDER BY ?condLabel ?resultLabel""",
+
+    "8. Full Patient Admission Profile": """PREFIX hco: <http://example.org/healthcare-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?name ?age ?gender ?bloodType ?condition ?admType ?hospital ?doctor ?medication ?testResult ?billing ?admDate ?dischDate
+WHERE {
+    ?patient a hco:Patient ;
+             hco:patientName ?name ;
+             hco:age ?age ;
+             hco:gender ?gender ;
+             hco:hasBloodType ?bt ;
+             hco:hasAdmission ?adm .
+    ?bt rdfs:label ?bloodType .
+    ?adm hco:hasMedicalCondition ?cond ;
+         hco:hasAdmissionType ?at ;
+         hco:admittedTo ?hosp ;
+         hco:attendedBy ?doc ;
+         hco:prescribedMedication ?med ;
+         hco:hasTestResult ?tr ;
+         hco:billingAmount ?billing ;
+         hco:dateOfAdmission ?admDate ;
+         hco:dischargeDate ?dischDate .
+    ?cond rdfs:label ?condition .
+    ?at rdfs:label ?admType .
+    ?hosp hco:hospitalName ?hospital .
+    ?doc hco:doctorName ?doctor .
+    ?med rdfs:label ?medication .
+    ?tr rdfs:label ?testResult .
+}
+ORDER BY ?name
+LIMIT 15""",
+
+    "9. Linked Data - DBpedia Connections": """PREFIX hco: <http://example.org/healthcare-ontology#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
@@ -137,56 +181,16 @@ WHERE {
         ?localResource rdfs:seeAlso ?externalResource .
         BIND("rdfs:seeAlso" AS ?linkType)
     }
-    FILTER(STRSTARTS(STR(?externalResource), "http://dbpedia.org/"))
+    FILTER(STRSTARTS(STR(?externalResource), "http://dbpedia.org/") ||
+           STRSTARTS(STR(?externalResource), "http://www.wikidata.org/"))
 }
 ORDER BY ?linkType ?localResource""",
 
-    "7. Full Patient Clinical Profile": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-SELECT ?patient ?age ?sex ?cpLabel ?bp ?chol ?maxHR ?oldpeak ?ecgLabel ?slopeLabel ?hasDisease
-WHERE {
-    ?patient a hdo:Patient ;
-             hdo:age ?age ;
-             hdo:sex ?sex ;
-             hdo:hasChestPainType ?cpType ;
-             hdo:hasMeasurement ?m ;
-             hdo:hasDiagnosis ?diag .
-    ?cpType rdfs:label ?cpLabel .
-    ?m hdo:restingBP ?bp ;
-       hdo:cholesterol ?chol ;
-       hdo:maxHR ?maxHR ;
-       hdo:oldpeak ?oldpeak ;
-       hdo:hasECGResult ?ecg ;
-       hdo:hasSTSlope ?slope .
-    ?ecg rdfs:label ?ecgLabel .
-    ?slope rdfs:label ?slopeLabel .
-    ?diag hdo:hasHeartDisease ?hasDisease .
-}
-ORDER BY ?patient
-LIMIT 15""",
-
-    "8. Heart Disease Rate by Sex": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-SELECT ?sex (COUNT(?patient) AS ?total)
-       (SUM(IF(?hasDisease = "true"^^xsd:boolean, 1, 0)) AS ?diseaseCount)
-       (ROUND(SUM(IF(?hasDisease = "true"^^xsd:boolean, 1, 0)) * 100.0 / COUNT(?patient)) AS ?diseaseRate)
-WHERE {
-    ?patient a hdo:Patient ;
-             hdo:sex ?sex ;
-             hdo:hasDiagnosis ?diag .
-    ?diag hdo:hasHeartDisease ?hasDisease .
-}
-GROUP BY ?sex""",
-
-    "9. Ontology Classes & Properties": """PREFIX hdo: <http://example.org/heart-disease-ontology#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    "10. Ontology Classes & Properties": """PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?type ?name ?label ?comment
+SELECT ?type ?name ?label
 WHERE {
     {
         ?name rdf:type owl:Class .
@@ -202,13 +206,12 @@ WHERE {
         ?name rdf:type owl:DatatypeProperty .
         BIND("Datatype Property" AS ?type)
     }
-    FILTER(STRSTARTS(STR(?name), "http://example.org/heart-disease-ontology#"))
+    FILTER(STRSTARTS(STR(?name), "http://example.org/healthcare-ontology#"))
     OPTIONAL { ?name rdfs:label ?label }
-    OPTIONAL { ?name rdfs:comment ?comment }
 }
 ORDER BY ?type ?name""",
 
-    "10. [DBpedia] Heart-Related Diseases": """# Switch endpoint to 'DBpedia Endpoint' above before running!
+    "11. [DBpedia] Healthcare Diseases": """# Switch endpoint to 'DBpedia Endpoint' above!
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
@@ -218,33 +221,17 @@ WHERE {
              rdfs:label ?label .
     FILTER (lang(?label) = 'en')
     FILTER (
-        CONTAINS(LCASE(?label), 'heart') ||
-        CONTAINS(LCASE(?label), 'cardiac') ||
-        CONTAINS(LCASE(?label), 'coronary') ||
-        CONTAINS(LCASE(?label), 'angina') ||
-        CONTAINS(LCASE(?label), 'myocardial')
+        CONTAINS(LCASE(?label), 'diabetes') ||
+        CONTAINS(LCASE(?label), 'hypertension') ||
+        CONTAINS(LCASE(?label), 'asthma') ||
+        CONTAINS(LCASE(?label), 'arthritis') ||
+        CONTAINS(LCASE(?label), 'obesity')
     )
 }
 ORDER BY ?label
 LIMIT 20""",
 
-    "11. [DBpedia] Cardiovascular Disease Info": """# Switch endpoint to 'DBpedia Endpoint' above before running!
-PREFIX dbr: <http://dbpedia.org/resource/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX dbo: <http://dbpedia.org/ontology/>
-
-SELECT ?name ?label ?type
-WHERE {
-    dbr:Cardiovascular_disease rdfs:label ?label ;
-                               a ?type .
-    OPTIONAL { dbr:Cardiovascular_disease foaf:name ?name }
-    FILTER (lang(?label) = 'en')
-    FILTER (STRSTARTS(STR(?type), 'http://dbpedia.org/'))
-}
-LIMIT 10""",
-
-    "12. [DBpedia] Thalassemia & Angina Details": """# Switch endpoint to 'DBpedia Endpoint' above before running!
+    "12. [DBpedia] Medication Details": """# Switch endpoint to 'DBpedia Endpoint' above!
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -252,12 +239,11 @@ PREFIX dbo: <http://dbpedia.org/ontology/>
 SELECT ?resource ?label ?type
 WHERE {
     VALUES ?resource {
-        dbr:Thalassemia
-        dbr:Angina
-        dbr:Cholesterol
-        dbr:Electrocardiography
-        dbr:Blood_pressure
-        dbr:Left_ventricular_hypertrophy
+        dbr:Aspirin
+        dbr:Ibuprofen
+        dbr:Penicillin
+        dbr:Paracetamol
+        dbr:Atorvastatin
     }
     ?resource rdfs:label ?label .
     OPTIONAL { ?resource a ?type . FILTER(STRSTARTS(STR(?type), 'http://dbpedia.org/')) }
@@ -271,20 +257,17 @@ def load_rdf_data():
     """Load the 5-star linked RDF data into memory."""
     global rdf_graph
     rdf_graph = Graph()
-    
+
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
-    # Try to load 5-star linked data first, fall back to 4-star
-    linked_path = os.path.join(base_dir, 'output', 'heart_disease_linked.ttl')
-    data_path = os.path.join(base_dir, 'output', 'heart_disease_data.ttl')
-    ontology_path = os.path.join(base_dir, 'ontology', 'heart_disease_ontology.ttl')
-    
-    # Load ontology
+
+    linked_path = os.path.join(base_dir, 'output', 'healthcare_linked.ttl')
+    data_path = os.path.join(base_dir, 'output', 'healthcare_data.ttl')
+    ontology_path = os.path.join(base_dir, 'ontology', 'healthcare_ontology.ttl')
+
     if os.path.exists(ontology_path):
         rdf_graph.parse(ontology_path, format="turtle")
         print(f"  [OK] Loaded ontology: {ontology_path}")
-    
-    # Load data (prefer linked version)
+
     if os.path.exists(linked_path):
         rdf_graph.parse(linked_path, format="turtle")
         print(f"  [OK] Loaded 5-star linked data: {linked_path}")
@@ -293,129 +276,78 @@ def load_rdf_data():
         print(f"  [OK] Loaded 4-star data: {data_path}")
     else:
         print("  [!] WARNING: No RDF data found! Run the pipeline first.")
-    
-    # Bind namespaces
-    rdf_graph.bind("hdo", HDO)
-    rdf_graph.bind("hdr", HDR)
-    
+
+    rdf_graph.bind("hco", HCO)
+    rdf_graph.bind("hcd", HCD)
+
     print(f"  Total triples in graph: {len(rdf_graph)}")
 
 
 def get_statistics():
     """Get summary statistics from the RDF graph."""
     stats = {}
-    
-    # Total triples
     stats['total_triples'] = len(rdf_graph)
-    
-    # Total patients
-    q = """
-    PREFIX hdo: <http://example.org/heart-disease-ontology#>
-    SELECT (COUNT(?p) AS ?count) WHERE { ?p a hdo:Patient }
-    """
+
+    q = "PREFIX hco: <http://example.org/healthcare-ontology#> SELECT (COUNT(?p) AS ?c) WHERE { ?p a hco:Patient }"
     for row in rdf_graph.query(q):
         stats['total_patients'] = int(row[0])
-    
-    # Heart disease positive
-    q = """
-    PREFIX hdo: <http://example.org/heart-disease-ontology#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    SELECT (COUNT(?d) AS ?count) WHERE { 
-        ?d hdo:hasHeartDisease "true"^^xsd:boolean 
-    }
-    """
+
+    q = "PREFIX hco: <http://example.org/healthcare-ontology#> SELECT (COUNT(?a) AS ?c) WHERE { ?a a hco:Admission }"
     for row in rdf_graph.query(q):
-        stats['disease_positive'] = int(row[0])
-    
-    # Heart disease negative
-    stats['disease_negative'] = stats.get('total_patients', 0) - stats.get('disease_positive', 0)
-    
-    # External links count
-    q = """
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        stats['total_admissions'] = int(row[0])
+
+    q = "PREFIX hco: <http://example.org/healthcare-ontology#> SELECT (COUNT(?d) AS ?c) WHERE { ?d a hco:Doctor }"
+    for row in rdf_graph.query(q):
+        stats['total_doctors'] = int(row[0])
+
+    q = "PREFIX hco: <http://example.org/healthcare-ontology#> SELECT (COUNT(?h) AS ?c) WHERE { ?h a hco:Hospital }"
+    for row in rdf_graph.query(q):
+        stats['total_hospitals'] = int(row[0])
+
+    q = """PREFIX owl: <http://www.w3.org/2002/07/owl#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    SELECT (COUNT(*) AS ?count) WHERE {
-        {
-            ?s owl:sameAs ?o .
-            FILTER(STRSTARTS(STR(?o), "http://dbpedia.org/") || STRSTARTS(STR(?o), "http://www.wikidata.org/"))
-        }
+    SELECT (COUNT(*) AS ?c) WHERE {
+        { ?s owl:sameAs ?o . FILTER(STRSTARTS(STR(?o), "http://dbpedia.org/") || STRSTARTS(STR(?o), "http://www.wikidata.org/")) }
         UNION
-        {
-            ?s rdfs:seeAlso ?o .
-            FILTER(STRSTARTS(STR(?o), "http://dbpedia.org/"))
-        }
-    }
-    """
+        { ?s rdfs:seeAlso ?o . FILTER(STRSTARTS(STR(?o), "http://dbpedia.org/")) }
+    }"""
     for row in rdf_graph.query(q):
         stats['external_links'] = int(row[0])
-    
-    # Classes count
-    q = """
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    SELECT (COUNT(?c) AS ?count) WHERE { 
+
+    q = """PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    SELECT (COUNT(?c) AS ?count) WHERE {
         ?c a owl:Class .
-        FILTER(STRSTARTS(STR(?c), "http://example.org/heart-disease-ontology#"))
-    }
-    """
+        FILTER(STRSTARTS(STR(?c), "http://example.org/healthcare-ontology#"))
+    }"""
     for row in rdf_graph.query(q):
         stats['classes_count'] = int(row[0])
-    
-    # Properties count
-    q = """
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    SELECT (COUNT(?p) AS ?count) WHERE { 
-        { ?p a owl:ObjectProperty } UNION { ?p a owl:DatatypeProperty }
-        FILTER(STRSTARTS(STR(?p), "http://example.org/heart-disease-ontology#"))
-    }
-    """
-    for row in rdf_graph.query(q):
-        stats['properties_count'] = int(row[0])
-    
+
     return stats
 
 
 @app.route('/')
 def index():
-    """Render the SPARQL query web interface."""
     stats = get_statistics()
-    return render_template('index.html', 
-                         sample_queries=SAMPLE_QUERIES,
-                         stats=stats)
+    return render_template('index.html', sample_queries=SAMPLE_QUERIES, stats=stats)
 
 
 @app.route('/sparql', methods=['GET', 'POST'])
 def sparql_endpoint():
-    """
-    SPARQL endpoint supporting both GET and POST requests.
-    
-    Parameters:
-        query (str): SPARQL query string
-        format (str): Response format (json, turtle, xml) - default: json
-    
-    Returns:
-        JSON results for SELECT/ASK queries
-        Turtle/XML for CONSTRUCT/DESCRIBE queries
-    """
     if request.method == 'GET':
         query = request.args.get('query', '')
-        output_format = request.args.get('format', 'json')
     else:
-        # Accept both form data and JSON body
         if request.is_json:
             data = request.get_json()
             query = data.get('query', '')
-            output_format = data.get('format', 'json')
         else:
             query = request.form.get('query', '')
-            output_format = request.form.get('format', 'json')
-    
+
     if not query.strip():
         return jsonify({"error": "No SPARQL query provided"}), 400
-    
+
     try:
         results = rdf_graph.query(query)
-        
-        # Handle SELECT queries
+
         if results.type == 'SELECT':
             columns = [str(v) for v in results.vars]
             rows = []
@@ -431,72 +363,51 @@ def sparql_endpoint():
                     else:
                         row_data[str(var)] = {"value": "", "type": "literal"}
                 rows.append(row_data)
-            
+
             return jsonify({
                 "type": "SELECT",
                 "columns": columns,
                 "results": rows,
                 "count": len(rows)
             })
-        
-        # Handle ASK queries
+
         elif results.type == 'ASK':
-            return jsonify({
-                "type": "ASK",
-                "result": bool(results.askAnswer)
-            })
-        
-        # Handle CONSTRUCT/DESCRIBE queries
+            return jsonify({"type": "ASK", "result": bool(results.askAnswer)})
+
         else:
-            if output_format == 'turtle':
-                return Response(
-                    results.serialize(format='turtle'),
-                    mimetype='text/turtle'
-                )
-            else:
-                return Response(
-                    results.serialize(format='xml'),
-                    mimetype='application/rdf+xml'
-                )
-    
+            return Response(results.serialize(format='turtle'), mimetype='text/turtle')
+
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 
 @app.route('/api/dbpedia-query', methods=['POST'])
 def dbpedia_query():
-    """
-    Proxy endpoint to query DBpedia's public SPARQL endpoint.
-    This enables federated queries from the web UI.
-    """
     data = request.get_json()
     query = data.get('query', '')
-    
+
     if not query.strip():
         return jsonify({"error": "No query provided"}), 400
-    
+
     try:
         sparql = SPARQLWrapper("https://dbpedia.org/sparql")
         sparql.setQuery(query)
         sparql.setReturnFormat(SPARQL_JSON)
         sparql.setTimeout(30)
-        
+
         results = sparql.query().convert()
-        
+
         columns = results['head']['vars']
         rows = []
         for binding in results['results']['bindings']:
             row_data = {}
             for col in columns:
                 if col in binding:
-                    row_data[col] = {
-                        "value": binding[col]['value'],
-                        "type": binding[col]['type']
-                    }
+                    row_data[col] = {"value": binding[col]['value'], "type": binding[col]['type']}
                 else:
                     row_data[col] = {"value": "", "type": "literal"}
             rows.append(row_data)
-        
+
         return jsonify({
             "type": "SELECT",
             "columns": columns,
@@ -504,23 +415,19 @@ def dbpedia_query():
             "count": len(rows),
             "source": "DBpedia"
         })
-    
+
     except Exception as e:
         return jsonify({"error": f"DBpedia query failed: {str(e)}"}), 400
 
 
 @app.route('/api/stats')
 def api_stats():
-    """Return dataset statistics as JSON."""
     return jsonify(get_statistics())
 
 
-# ============================================================================
-# Main
-# ============================================================================
 if __name__ == '__main__':
     print("=" * 60)
-    print("  Heart Disease LOD - SPARQL Endpoint")
+    print("  Healthcare LOD - SPARQL Endpoint")
     print("=" * 60)
     print("\nLoading RDF data...")
     load_rdf_data()

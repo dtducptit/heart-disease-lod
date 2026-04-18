@@ -1,0 +1,250 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <http://schema.org/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix hco:    <http://example.org/healthcare-ontology#> .
+
+# ==============================================================================
+# Ontology Declaration
+# ==============================================================================
+<http://example.org/healthcare-ontology> a owl:Ontology ;
+    rdfs:label "Healthcare Ontology"@en ;
+    rdfs:comment "An OWL ontology for modeling healthcare patient admissions, including medical conditions, medications, hospitals, doctors, and test results."@en ;
+    dct:created "2026-04-17"^^xsd:date ;
+    dct:source "Kaggle Healthcare Dataset (prasad22)" ;
+    owl:versionInfo "1.0" .
+
+# ==============================================================================
+# Classes
+# ==============================================================================
+
+hco:Patient a owl:Class ;
+    rdfs:label "Patient"@en ;
+    rdfs:comment "A person receiving healthcare services."@en ;
+    rdfs:subClassOf foaf:Person .
+
+hco:Admission a owl:Class ;
+    rdfs:label "Admission"@en ;
+    rdfs:comment "A hospital admission event for a patient."@en .
+
+hco:Hospital a owl:Class ;
+    rdfs:label "Hospital"@en ;
+    rdfs:comment "A healthcare facility where patients are admitted."@en ;
+    rdfs:subClassOf schema:Hospital .
+
+hco:Doctor a owl:Class ;
+    rdfs:label "Doctor"@en ;
+    rdfs:comment "A medical professional responsible for patient care."@en ;
+    rdfs:subClassOf foaf:Person .
+
+hco:InsuranceProvider a owl:Class ;
+    rdfs:label "Insurance Provider"@en ;
+    rdfs:comment "A health insurance company providing coverage."@en ;
+    rdfs:subClassOf schema:Organization .
+
+hco:MedicalCondition a owl:Class ;
+    rdfs:label "Medical Condition"@en ;
+    rdfs:comment "A primary medical condition or diagnosis."@en .
+
+hco:BloodType a owl:Class ;
+    rdfs:label "Blood Type"@en ;
+    rdfs:comment "A classification of blood type (ABO + Rh)."@en .
+
+hco:AdmissionType a owl:Class ;
+    rdfs:label "Admission Type"@en ;
+    rdfs:comment "The urgency classification of a hospital admission."@en .
+
+hco:Medication a owl:Class ;
+    rdfs:label "Medication"@en ;
+    rdfs:comment "A pharmaceutical drug prescribed to a patient."@en .
+
+hco:TestResult a owl:Class ;
+    rdfs:label "Test Result"@en ;
+    rdfs:comment "The outcome classification of a medical test."@en .
+
+# ==============================================================================
+# Object Properties
+# ==============================================================================
+
+hco:hasAdmission a owl:ObjectProperty ;
+    rdfs:label "has admission"@en ;
+    rdfs:comment "Links a patient to their hospital admission."@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range hco:Admission .
+
+hco:attendedBy a owl:ObjectProperty ;
+    rdfs:label "attended by"@en ;
+    rdfs:comment "Links an admission to the attending doctor."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:Doctor .
+
+hco:admittedTo a owl:ObjectProperty ;
+    rdfs:label "admitted to"@en ;
+    rdfs:comment "Links an admission to the hospital."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:Hospital .
+
+hco:hasInsurance a owl:ObjectProperty ;
+    rdfs:label "has insurance"@en ;
+    rdfs:comment "Links a patient to their insurance provider."@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range hco:InsuranceProvider .
+
+hco:hasBloodType a owl:ObjectProperty ;
+    rdfs:label "has blood type"@en ;
+    rdfs:comment "Links a patient to their blood type."@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range hco:BloodType .
+
+hco:hasMedicalCondition a owl:ObjectProperty ;
+    rdfs:label "has medical condition"@en ;
+    rdfs:comment "Links an admission to the primary medical condition."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:MedicalCondition .
+
+hco:hasAdmissionType a owl:ObjectProperty ;
+    rdfs:label "has admission type"@en ;
+    rdfs:comment "Links an admission to its urgency classification."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:AdmissionType .
+
+hco:prescribedMedication a owl:ObjectProperty ;
+    rdfs:label "prescribed medication"@en ;
+    rdfs:comment "Links an admission to the prescribed medication."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:Medication .
+
+hco:hasTestResult a owl:ObjectProperty ;
+    rdfs:label "has test result"@en ;
+    rdfs:comment "Links an admission to the medical test result."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range hco:TestResult .
+
+# ==============================================================================
+# Datatype Properties
+# ==============================================================================
+
+hco:patientName a owl:DatatypeProperty ;
+    rdfs:label "patient name"@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range xsd:string .
+
+hco:age a owl:DatatypeProperty ;
+    rdfs:label "age"@en ;
+    rdfs:comment "Age of the patient in years."@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range xsd:integer .
+
+hco:gender a owl:DatatypeProperty ;
+    rdfs:label "gender"@en ;
+    rdfs:domain hco:Patient ;
+    rdfs:range xsd:string .
+
+hco:dateOfAdmission a owl:DatatypeProperty ;
+    rdfs:label "date of admission"@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range xsd:date .
+
+hco:dischargeDate a owl:DatatypeProperty ;
+    rdfs:label "discharge date"@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range xsd:date .
+
+hco:billingAmount a owl:DatatypeProperty ;
+    rdfs:label "billing amount"@en ;
+    rdfs:comment "Amount billed for healthcare services in USD."@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range xsd:float .
+
+hco:roomNumber a owl:DatatypeProperty ;
+    rdfs:label "room number"@en ;
+    rdfs:domain hco:Admission ;
+    rdfs:range xsd:integer .
+
+hco:doctorName a owl:DatatypeProperty ;
+    rdfs:label "doctor name"@en ;
+    rdfs:domain hco:Doctor ;
+    rdfs:range xsd:string .
+
+hco:hospitalName a owl:DatatypeProperty ;
+    rdfs:label "hospital name"@en ;
+    rdfs:domain hco:Hospital ;
+    rdfs:range xsd:string .
+
+# ==============================================================================
+# Named Individuals - Blood Types
+# ==============================================================================
+
+hco:BloodType_Apos a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "A+"@en .
+hco:BloodType_Aneg a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "A-"@en .
+hco:BloodType_Bpos a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "B+"@en .
+hco:BloodType_Bneg a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "B-"@en .
+hco:BloodType_ABpos a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "AB+"@en .
+hco:BloodType_ABneg a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "AB-"@en .
+hco:BloodType_Opos a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "O+"@en .
+hco:BloodType_Oneg a owl:NamedIndividual, hco:BloodType ;
+    rdfs:label "O-"@en .
+
+# ==============================================================================
+# Named Individuals - Medical Conditions
+# ==============================================================================
+
+hco:Diabetes a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Diabetes"@en .
+hco:Hypertension a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Hypertension"@en .
+hco:Asthma a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Asthma"@en .
+hco:Arthritis a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Arthritis"@en .
+hco:Cancer a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Cancer"@en .
+hco:Obesity a owl:NamedIndividual, hco:MedicalCondition ;
+    rdfs:label "Obesity"@en .
+
+# ==============================================================================
+# Named Individuals - Admission Types
+# ==============================================================================
+
+hco:Emergency a owl:NamedIndividual, hco:AdmissionType ;
+    rdfs:label "Emergency"@en .
+hco:Elective a owl:NamedIndividual, hco:AdmissionType ;
+    rdfs:label "Elective"@en .
+hco:Urgent a owl:NamedIndividual, hco:AdmissionType ;
+    rdfs:label "Urgent"@en .
+
+# ==============================================================================
+# Named Individuals - Medications
+# ==============================================================================
+
+hco:Aspirin a owl:NamedIndividual, hco:Medication ;
+    rdfs:label "Aspirin"@en .
+hco:Ibuprofen a owl:NamedIndividual, hco:Medication ;
+    rdfs:label "Ibuprofen"@en .
+hco:Penicillin a owl:NamedIndividual, hco:Medication ;
+    rdfs:label "Penicillin"@en .
+hco:Paracetamol a owl:NamedIndividual, hco:Medication ;
+    rdfs:label "Paracetamol"@en .
+hco:Lipitor a owl:NamedIndividual, hco:Medication ;
+    rdfs:label "Lipitor"@en .
+
+# ==============================================================================
+# Named Individuals - Test Results
+# ==============================================================================
+
+hco:NormalResult a owl:NamedIndividual, hco:TestResult ;
+    rdfs:label "Normal"@en .
+hco:AbnormalResult a owl:NamedIndividual, hco:TestResult ;
+    rdfs:label "Abnormal"@en .
+hco:InconclusiveResult a owl:NamedIndividual, hco:TestResult ;
+    rdfs:label "Inconclusive"@en .
